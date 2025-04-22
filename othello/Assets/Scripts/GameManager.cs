@@ -90,12 +90,39 @@ public class GameManager : MonoBehaviour
         List<Tile> flips = GetFlippableTiles(pos, currentTurn);
         if (flips.Count == 0) return;
 
-        tile.SetToken(currentTurn);
-        StartCoroutine(FlipTiles(flips, currentTurn));
-        audioSource.PlayOneShot(placementSound);
-        SwitchTurn();
-        isAnimating = true;
+        StartCoroutine(PlaceAndFlip(tile, flips));
     }
+
+    IEnumerator PlaceAndFlip(Tile tile, List<Tile> flips)
+    {
+        isAnimating = true;
+
+        tile.SetToken(currentTurn);
+        audioSource.PlayOneShot(placementSound);
+
+        foreach (Tile t in flips)
+        {
+            yield return new WaitForSeconds(0.1f);
+            t.SetToken(currentTurn);
+        }
+
+        yield return new WaitUntil(() => AllAnimationsFinished());
+
+        isAnimating = false;
+        SwitchTurn();
+    }
+
+    bool AllAnimationsFinished()
+    {
+        foreach (Tile tile in board)
+        {
+            if (tile.isAnimating) return false;
+        }
+        return true;
+    }
+
+
+
 
     Vector2Int GetTilePosition(Tile tile)
     {
@@ -207,22 +234,30 @@ public class GameManager : MonoBehaviour
 
     void EndGame()
     {
+        StartCoroutine(ShowWinScreen());
+    }
+
+    IEnumerator ShowWinScreen()
+    {
+        yield return new WaitUntil(() => AllAnimationsFinished());
+        yield return new WaitForSeconds(0.3f);
+
         int black = 0;
         int white = 0;
+
         for (int y = 0; y < 8; y++)
-        {
             for (int x = 0; x < 8; x++)
             {
                 if (board[x, y].tokenColor == TokenColor.Black) black++;
                 else if (board[x, y].tokenColor == TokenColor.White) white++;
             }
-        }
 
         winScreen.SetActive(true);
         if (black > white) winText.text = $"BLACK WINS!\n{black}-{white}";
         else if (white > black) winText.text = $"WHITE WINS!\n{white}-{black}";
         else winText.text = $"TIE GAME!\n{black}-{white}";
     }
+
 
     void ResetGame()
     {

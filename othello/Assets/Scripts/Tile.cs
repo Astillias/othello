@@ -35,18 +35,6 @@ public class Tile : MonoBehaviour
         }
     }
 
-    IEnumerator FlipAnimation(Sprite[] frames, TokenColor newColor)
-    {
-        for (int i = 0; i < frames.Length; i++)
-        {
-            spriteRenderer.sprite = frames[i];
-            yield return new WaitForSeconds(0.05f);
-        }
-        tokenColor = newColor;
-        spriteRenderer.sprite = newColor == TokenColor.Black ? blackSprite : whiteSprite;
-        audioSource.PlayOneShot(placementSound);
-    }
-
     public bool IsEmpty()
     {
         return tokenColor == TokenColor.Empty;
@@ -55,4 +43,21 @@ public class Tile : MonoBehaviour
     {
         GameManager.Instance.OnTileClicked(this);
     }
+
+    public bool isAnimating = false;
+
+    IEnumerator FlipAnimation(Sprite[] frames, TokenColor newColor)
+    {
+        isAnimating = true;
+        for (int i = 0; i < frames.Length; i++)
+        {
+            spriteRenderer.sprite = frames[i];
+            yield return new WaitForSeconds(0.05f);
+        }
+        tokenColor = newColor;
+        spriteRenderer.sprite = newColor == TokenColor.Black ? blackSprite : whiteSprite;
+        audioSource.PlayOneShot(placementSound);
+        isAnimating = false;
+    }
+
 }
