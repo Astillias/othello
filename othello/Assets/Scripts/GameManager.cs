@@ -94,23 +94,44 @@ public class GameManager : MonoBehaviour
     }
 
     IEnumerator PlaceAndFlip(Tile tile, List<Tile> flips)
+{
+    isAnimating = true;
+
+    tile.SetToken(currentTurn);
+    audioSource.PlayOneShot(placementSound);
+
+    // Group flips by distance to the placed tile
+    Vector2Int centerPos = GetTilePosition(tile);
+    Dictionary<int, List<Tile>> distanceGroups = new Dictionary<int, List<Tile>>();
+
+    foreach (Tile t in flips)
     {
-        isAnimating = true;
+        Vector2Int tPos = GetTilePosition(t);
+        int dist = Mathf.Max(Mathf.Abs(tPos.x - centerPos.x), Mathf.Abs(tPos.y - centerPos.y));
+        if (!distanceGroups.ContainsKey(dist))
+            distanceGroups[dist] = new List<Tile>();
+        distanceGroups[dist].Add(t);
+    }
 
-        tile.SetToken(currentTurn);
-        audioSource.PlayOneShot(placementSound);
+    // Flip tiles in groups, one group per frame (cascade effect)
+    List<int> distances = new List<int>(distanceGroups.Keys);
+    distances.Sort();
 
-        foreach (Tile t in flips)
+    foreach (int dist in distances)
+    {
+        List<Tile> group = distanceGroups[dist];
+        foreach (Tile t in group)
         {
-            yield return new WaitForSeconds(0.1f);
             t.SetToken(currentTurn);
         }
-
-        yield return new WaitUntil(() => AllAnimationsFinished());
-
-        isAnimating = false;
-        SwitchTurn();
+        yield return new WaitForSeconds(0.1f); // delay between groups
     }
+
+    yield return new WaitUntil(() => AllAnimationsFinished());
+
+    isAnimating = false;
+    SwitchTurn();
+}
 
     bool AllAnimationsFinished()
     {
